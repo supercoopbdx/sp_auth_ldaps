@@ -1,6 +1,8 @@
 import ldap
 import logging
+from openerp import tools
 from openerp.osv import osv
+from openerp import SUPERUSER_ID
 from ldap.filter import filter_format
 
 
@@ -68,3 +70,32 @@ class CompanyLDAP(osv.osv):
         except ldap.LDAPError as e:
             _logger.error("An LDAP exception occurred: %s", e)
         return entry
+
+    def get_or_create_user(self, cr, uid, conf, login, ldap_entry, context=None):
+        """
+        Retrieve an active resource of model res_users with the specified
+        login. Create the user if it is not initially found.
+        :param dict conf: LDAP configuration
+        :param login: the user's login
+        :param tuple ldap_entry: single LDAP result (dn, attrs)
+        :return: res_users id
+        :rtype: int
+        """
+
+        user_id = False
+        login = tools.ustr(login.lower().strip())
+        cr.execute("SELECT id, active FROM res_users u JOIN res_partner p ON u.partner_id = p.id WHERE lower(u.login)=%s OR lower(p.mail)=%s", (login, login))
+        res = cr.fetchone()
+        if res:
+            if res[1]:
+                user_id = res[0]
+        elif conf["create_user"]:
+            _logger.debug('Creating new Odoo user "%s" from LDAP' % login)
+            user_obj = self.pool["res.users"]
+            values = self.map_ldap_attributes(cr, uid, conf, login, ldap_entry)
+            if conf["user"]:
+                values["active"] = True
+                user_id = user_obj.copy(cr, SUPERUSER_ID, conf["user"], default=values)
+            else:
+                user_id = user_obj.create(cr, SUPERUSER_ID, values)
+        return user_id

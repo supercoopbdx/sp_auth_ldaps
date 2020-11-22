@@ -8,7 +8,7 @@
     "author": "Supercoop",
     "website": "http://www.supercoop.fr",
     "category": "auth",
-    "version": "9.0.1.0.2",
+    "version": "9.0.1.0.3",
     "depends": [
         "auth_ldap",
     ],
