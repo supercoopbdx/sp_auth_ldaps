@@ -84,7 +84,7 @@ class CompanyLDAP(osv.osv):
 
         user_id = False
         login = tools.ustr(login.lower().strip())
-        cr.execute("SELECT u.id, u.active FROM res_users u JOIN res_partner p ON u.partner_id = p.id WHERE lower(u.login)=%s OR lower(p.mail)=%s", (login, login))
+        cr.execute("SELECT u.id, u.active FROM res_users u JOIN res_partner p ON u.partner_id = p.id WHERE lower(u.login)=%s OR lower(p.email)=%s", (login, login))
         res = cr.fetchone()
         if res:
             if res[1]:
