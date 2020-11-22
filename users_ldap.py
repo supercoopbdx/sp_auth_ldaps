@@ -1,5 +1,10 @@
 import ldap
+import logging
 from openerp.osv import osv
+from ldap.filter import filter_format
+
+
+_logger = logging.getLogger(__name__)
 
 
 class CompanyLDAP(osv.osv):
@@ -43,20 +48,23 @@ class CompanyLDAP(osv.osv):
             return False
 
         entry = False
-        filter = filter_format(conf['ldap_filter'], [login] * conf['ldap_filter'].count('%s'))
+        filter = filter_format(
+            conf["ldap_filter"],
+            [login] * conf["ldap_filter"].count("%s"),
+        )
         try:
-            results = self.query(conf, filter.encode('utf-8'))
+            results = self.query(conf, filter.encode("utf-8"))
 
             # Get rid of (None, attrs) for searchResultReference replies
             results = [i for i in results if i[0]]
             if results and len(results) == 1:
                 dn = results[0][0]
                 conn = self.connect(conf)
-                conn.simple_bind_s(dn, password.encode('utf-8'))
+                conn.simple_bind_s(dn, password.encode("utf-8"))
                 conn.unbind()
                 entry = results[0]
         except ldap.INVALID_CREDENTIALS:
             return False
-        except ldap.LDAPError, e:
-            _logger.error('An LDAP exception occurred: %s', e)
+        except ldap.LDAPError as e:
+            _logger.error("An LDAP exception occurred: %s", e)
         return entry
